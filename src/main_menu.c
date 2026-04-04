@@ -26,8 +26,8 @@ int main()
             if (scanf("%d", &choice) != 1 || choice < 0 || choice > 5)
             {
                 printf("Invalid choice. Please try again.\n");
-                while (getchar() != '\n')
-                    ;
+                while (getchar() != '\n');
+                choice = -1;
             }
         } while (choice < 0 || choice > 5);
 
