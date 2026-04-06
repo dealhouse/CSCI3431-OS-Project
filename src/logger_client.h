@@ -2,9 +2,9 @@
  * logger_client.h
  *
  * Student: Moneab Milad
- * A#: 481583
+ * A#:481583
  *
- * Include this in any module to send a log entry to the logger daemon.
+ * helper function to Include in any module to send a log entry to the logger daemon.
  * Call: log_event("MODULE_NAME", "your message");
  * If the daemon is not running, the call does nothing.
  */
@@ -30,9 +30,9 @@
 
 /*
  * Sends a log message to the logger daemon through the named pipe
- * - Formats the message with module name
- * - Writes it into the FIFO
- * - If daemon is not running, it safely does nothing
+ *  Formats the message with module name
+ *  Writes it into the FIFO
+ *  If daemon is not running, it safely does nothing
  */
 static inline void log_event(const char *module, const char *msg) {
 
