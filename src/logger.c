@@ -1,30 +1,26 @@
 /*
  * logger.c
  * Module 1 - Logging System (IPC)
- *
  * Student: Moneab Milad
  * A#: 481583
- *
  * Uses two IPC mechanisms:
- *   1. Named pipe (FIFO) - other modules write log messages into it
- *   2. Shared memory ring - stages messages before flushing to logs/logs.txt
+ * 1. Named pipe (FIFO) - other modules write log messages into it
+ * 2. Shared memory ring - stages messages before flushing to logs/logs.txt
  *
  * Usage:
- *   ./logger                        - start daemon
- *   ./logger stop                   - stop daemon
- *   ./logger log MODULE "message"   - write one log entry
+ * ./logger    - start daemon
+ * ./logger stop      - stop daemon
+ * ./logger log MODULE "message"   - write one log entry
  */
 
-// Enables POSIX features (like FIFO, shared memory, etc.)
+
 #define _POSIX_C_SOURCE 200809L
 
-// Standard libraries for input/output, memory, strings, etc.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-// Libraries for file control and permissions
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -103,10 +99,10 @@ static void shm_destroy(void) {
 
 /*
  * Main daemon loop:
- * - Reads messages from pipe
- * - Adds timestamp
- * - Stores them in shared memory
- * - Writes them to log file
+ * Reads messages from pipe
+ * Adds timestamp
+ * Stores them in shared memory
+ * Writes them to log file
  */
 static void run_daemon(void) {
 
@@ -170,7 +166,7 @@ static void run_daemon(void) {
         while (ring_pop(ring, out))
             fprintf(fp, "%s\n", out);
 
-        fflush(fp); // Ensure data is written to file
+        fflush(fp); // makes sure data is written to file
     }
 
 done:
@@ -202,9 +198,9 @@ void log_event(const char *module, const char *msg) {
 
 /*
  * Main function:
- * - "stop" → sends stop signal to daemon
- * - "log"  → sends a log message
- * - default → starts daemon
+ * "stop": sends stop signal to daemon
+ * "log" :  sends a log message
+ *  default : starts daemon
  */
 int main(int argc, char *argv[]) {
 
