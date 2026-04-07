@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_BLOCKS 100
 
@@ -10,12 +11,21 @@ int m_is_free[MAX_BLOCKS];
 
 int total_blocks = 0;
 
+// --- Logging System Integration ---
+void log_event(const char *message) {
+    char command[512];
+    // Assumes the logger executable is in the same directory (/bin) 
+    // and accepts the log string as an argument.
+    snprintf(command, sizeof(command), "./logger \"%s\"", message);
+    system(command);
+}
+
 // 1. Display Memory Map
 void display() {
+    log_event("Action: User requested to display memory map.");
     printf("\n--- Memory Map ---\n");
     printf("Index\tID\tStart\tSize\tStatus\n");
     for (int i = 0; i < total_blocks; i++) {
-        // Use ID -1 to represent Free space visually
         if (m_is_free[i]) {
             printf("%d\t-\t%d\t%d\tFree\n", i, m_start[i], m_size[i]);
         } else {
@@ -27,11 +37,16 @@ void display() {
 
 // 2. Allocation (First-Fit)
 void allocate(int proc_id, int request_size) {
+    char log_msg[256];
+    
     for (int i = 0; i < total_blocks; i++) {
         if (m_is_free[i] && m_size[i] >= request_size) {
             if (m_size[i] == request_size) {
                 m_is_free[i] = 0;
                 m_id[i] = proc_id;
+                
+                snprintf(log_msg, sizeof(log_msg), "Action: Successfully allocated exact fit for P%d (Size: %d).", proc_id, request_size);
+                log_event(log_msg);
                 printf("Successfully allocated P%d.\n", proc_id);
                 return;
             }
@@ -53,25 +68,37 @@ void allocate(int proc_id, int request_size) {
             m_start[i+1] = m_start[i] + request_size;
             m_size[i+1] -= request_size;
             total_blocks++;
+            
+            snprintf(log_msg, sizeof(log_msg), "Action: Successfully allocated and split block for P%d (Size: %d).", proc_id, request_size);
+            log_event(log_msg);
             printf("Successfully allocated P%d.\n", proc_id);
             return;
         }
     }
+    snprintf(log_msg, sizeof(log_msg), "Action: Allocation failed for P%d (Size: %d) - Not enough contiguous space.", proc_id, request_size);
+    log_event(log_msg);
     printf("Allocation failed: Not enough contiguous space.\n");
 }
 
 // 3. Deallocation
 void deallocate(int proc_id) {
     int found = 0;
+    char log_msg[256];
+
     for (int i = 0; i < total_blocks; i++) {
         if (!m_is_free[i] && m_id[i] == proc_id) {
             m_is_free[i] = 1;
             m_id[i] = -1;
             found = 1;
+            
+            snprintf(log_msg, sizeof(log_msg), "Action: Deallocated memory for P%d.", proc_id);
+            log_event(log_msg);
             printf("Deallocated P%d.\n", proc_id);
         }
     }
     if (!found) {
+        snprintf(log_msg, sizeof(log_msg), "Action: Deallocation failed - P%d not found.", proc_id);
+        log_event(log_msg);
         printf("Deallocation failed: P%d not found.\n", proc_id);
     }
 }
@@ -108,18 +135,27 @@ void compact() {
     } else {
         total_blocks = write_index;
     }
+    
+    log_event("Action: Executed memory compaction.");
     printf("Memory compacted.\n");
 }
 
 // 5. Main Driver
 int main() {
     int initial_memory;
+    char log_msg[256];
     
+    log_event("System: Memory Allocation module initialized.");
+
     printf("Enter initial memory size (total space): ");
     if (scanf("%d", &initial_memory) != 1 || initial_memory <= 0) {
+        log_event("Error: Invalid initial memory size entered. Exiting.");
         printf("Invalid memory size. Exiting.\n");
         return 1;
     }
+
+    snprintf(log_msg, sizeof(log_msg), "Input: Initial memory size set to %d.", initial_memory);
+    log_event(log_msg);
 
     // Initialize the starting state as one large free block
     m_id[0] = -1;
@@ -139,12 +175,15 @@ int main() {
         printf("5. Exit\n");
         printf("Select an option: ");
         
-        // Input validation to prevent infinite loops on non-integer input
         if (scanf("%d", &choice) != 1) {
+            log_event("Error: Non-integer input detected at main menu.");
             printf("Invalid input. Please enter a number.\n");
             while (getchar() != '\n'); 
             continue;
         }
+
+        snprintf(log_msg, sizeof(log_msg), "Input: User selected menu option %d.", choice);
+        log_event(log_msg);
 
         switch (choice) {
             case 1:
@@ -152,11 +191,19 @@ int main() {
                 if (scanf("%d", &proc_id) != 1) { while(getchar() != '\n'); break; }
                 printf("Enter Size: ");
                 if (scanf("%d", &size) != 1) { while(getchar() != '\n'); break; }
+                
+                snprintf(log_msg, sizeof(log_msg), "Input: Requested allocation for P%d with size %d.", proc_id, size);
+                log_event(log_msg);
+                
                 allocate(proc_id, size);
                 break;
             case 2:
                 printf("Enter Process ID to deallocate: ");
                 if (scanf("%d", &proc_id) != 1) { while(getchar() != '\n'); break; }
+                
+                snprintf(log_msg, sizeof(log_msg), "Input: Requested deallocation for P%d.", proc_id);
+                log_event(log_msg);
+                
                 deallocate(proc_id);
                 break;
             case 3:
@@ -166,6 +213,7 @@ int main() {
                 display();
                 break;
             case 5:
+                log_event("System: Exiting Memory Allocation module.");
                 printf("Exiting Memory Manager...\n");
                 return 0;
             default:
