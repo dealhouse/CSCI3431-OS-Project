@@ -25,7 +25,7 @@ void createFile()
     if (!file)
     {
         printf("Error creating file.\n");
-        log_action("Failed to create file.");
+        log_event("FILE MGMT", "Failed to create file.");
         return;
     }
 
@@ -36,7 +36,7 @@ void createFile()
 
     char log_msg[150];
     sprintf(log_msg, "Created file: %s", filename);
-    log_action(log_msg);
+    log_event("FILE MGMT", log_msg);
 }
 
 //Read a file
@@ -50,7 +50,7 @@ void readFile()
     if (!file)
     {
         printf("Error: File does not exist.\n");
-        log_action("Failed to read file.");
+        log_event("FILE MGMT", "Failed to read file.");
         return;
     }
 
@@ -63,7 +63,7 @@ void readFile()
 
     char log_msg[150];
     sprintf(log_msg, "Read file: %s", filename);
-    log_action(log_msg);
+    log_event("FILE MGMT", log_msg);
 }
 
 //Delete a file
@@ -78,12 +78,12 @@ void deleteFile()
         printf("File '%s' deleted successfully.\n", filename);
         char log_msg[150];
         sprintf(log_msg, "Deleted file: %s", filename);
-        log_action(log_msg);
+        log_event("FILE MGMT", log_msg);
     }
     else
     {
         printf("Error: Could not delete file.\n");
-        log_action("Failed to delete file.");
+        log_event("FILE MGMT", "Failed to delete file.");
     }
 }
 
@@ -92,7 +92,7 @@ void listFiles()
 {
     printf("Files in current directory:\n");
     system("ls"); // For Windows use system("dir");
-    log_action("Listed files in directory.");
+    log_event("FILE MGMT", "Listed files in directory.");
 }
 
 int main()

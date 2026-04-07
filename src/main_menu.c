@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "logger_client.h"
 
 int main()
 {
@@ -15,10 +16,9 @@ int main()
         exit(1);
     }
 
-    #define CYAN    "\033[0;36m"
-#define YELLOW  "\033[0;33m"
-#define RESET   "\033[0m"
-
+#define CYAN "\033[0;36m"
+#define YELLOW "\033[0;33m"
+#define RESET "\033[0m"
 
     sleep(1);
     while (1)
@@ -48,9 +48,13 @@ int main()
 
         if (choice == 0)
         {
+            log_event("MENU", "User selected exit.");
             printf("Exiting...\n");
             exit(0);
         }
+        char log_msg[64];
+        snprintf(log_msg, sizeof(log_msg), "User selected option %d", choice);
+        log_event("MENU", log_msg);
 
         pid_t pid = fork();
 
