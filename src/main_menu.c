@@ -7,18 +7,32 @@ int main()
 {
     int choice = -1;
 
+    pid_t logger_pid = fork();
+    if (logger_pid == 0)
+    {
+        execl("./logger", "logger", NULL);
+        perror("logger exec failed");
+        exit(1);
+    }
+
+    #define CYAN    "\033[0;36m"
+#define YELLOW  "\033[0;33m"
+#define RESET   "\033[0m"
+
+
+    sleep(1);
     while (1)
     {
-        printf("\n====================\n");
-        printf("    Main  Menu    \n");
-        printf("====================\n");
-        printf("1. Logging System\n");
+        printf(CYAN "===========================\n");
+        printf("        Main   Menu        \n");
+        printf("===========================" RESET "\n");
+        printf(YELLOW "1. Logging System\n");
         printf("2. Peterson's Solution\n");
         printf("3. File Management\n");
         printf("4. Memory Allocation\n");
         printf("5. Amdahl's Law\n");
         printf("0. Exit\n");
-        printf("===========================\n");
+        printf("===========================\n" RESET);
 
         do
         {
@@ -26,7 +40,8 @@ int main()
             if (scanf("%d", &choice) != 1 || choice < 0 || choice > 5)
             {
                 printf("Invalid choice. Please try again.\n");
-                while (getchar() != '\n');
+                while (getchar() != '\n')
+                    ;
                 choice = -1;
             }
         } while (choice < 0 || choice > 5);
@@ -46,8 +61,24 @@ int main()
             switch (choice)
             {
             case 1:
-                execl("./logger", "logger", NULL);
-                break;
+            {
+                FILE *f = fopen("../logs/logs.txt", "r");
+                if (!f)
+                {
+                    printf("No logs found.\n");
+                    printf("\nPress enter to continue...\n");
+                    getchar();
+                    getchar();
+                }
+                else
+                {
+                    fclose(f);
+                    execlp("less", "less", "../logs/logs.txt", NULL);
+                }
+
+                exit(0);
+            }
+            break;
             case 2:
                 execl("./peterson", "peterson", NULL);
                 break;
@@ -69,6 +100,8 @@ int main()
         {
             wait(NULL);
             printf("\033[?1049l");
+            fflush(stdout);
+            printf("\033[2J\033[H");
             fflush(stdout);
         }
         else

@@ -4,6 +4,8 @@
 echo "Cleaning old build..."
 rm -rf bin/ 
 rm -rf logs/
+rm -f /tmp/os_log_pipe
+ipcrm -M 0x4C4F4720 2>/dev/null
 
 #Create new folders
 echo "Creating new directories..."
@@ -30,7 +32,7 @@ else
 fi
 
 echo "Compiling Peterson's Solution Module..."
-gcc src/peterson.c -o bin/peterson
+gcc -w src/peterson.c -o bin/peterson
 if [ $? -eq 0 ]; then
     echo "Peterson's Solution compiled successfully!"
 else
@@ -39,7 +41,7 @@ else
 fi
 
 echo "Compiling Memory Allocation Module..."
-gcc src/memory.c -o bin/memory
+gcc -w src/memory.c -o bin/memory
 if [ $? -eq 0 ]; then
     echo "Memory Allocation compiled successfully!"
 else

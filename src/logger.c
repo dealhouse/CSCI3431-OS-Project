@@ -34,7 +34,7 @@
 
 // Constants for pipe location, log file, shared memory key, etc.
 #define PIPE_PATH  "/tmp/os_log_pipe"
-#define LOG_FILE "logs.txt"
+#define LOG_FILE "../logs/logs.txt"
 #define SHM_KEY    0x4C4F4720
 #define RING_SIZE  16
 #define MSG_LEN    256
