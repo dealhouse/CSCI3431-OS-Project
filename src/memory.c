@@ -13,11 +13,11 @@ int m_is_free[MAX_BLOCKS];
 int total_blocks = 0;
 
 
-// 1. Display Memory Map
+// Display Mem-Map
 void display() {
     log_event("MEMORY", "Action: User requested to display memory map.");
-    printf("\n--- Memory Map ---\n");
-    printf("Index\tID\tStart\tSize\tStatus\n");
+    printf("\n--------------\n");
+    printf("Index\tPID\tStart\tSize\tStatus\n");
     for (int i = 0; i < total_blocks; i++) {
         if (m_is_free[i]) {
             printf("%d\t-\t%d\t%d\tFree\n", i, m_start[i], m_size[i]);
@@ -28,7 +28,7 @@ void display() {
     printf("------------------\n");
 }
 
-// 2. Allocation (First-Fit)
+//Allocation First-Fit Algo
 void allocate(int proc_id, int request_size) {
     char log_msg[256];
     
@@ -73,7 +73,7 @@ void allocate(int proc_id, int request_size) {
     printf("Allocation failed: Not enough contiguous space.\n");
 }
 
-// 3. Deallocation
+// Deallocation
 void deallocate(int proc_id) {
     int found = 0;
     char log_msg[256];
@@ -96,7 +96,7 @@ void deallocate(int proc_id) {
     }
 }
 
-// 4. Compaction
+// Compaction
 void compact() {
     int current_addr = 0;
     int write_index = 0;
@@ -133,7 +133,7 @@ void compact() {
     printf("Memory compacted.\n");
 }
 
-// 5. Main Driver
+// Main Driver
 int main() {
     int initial_memory;
     char log_msg[256];
