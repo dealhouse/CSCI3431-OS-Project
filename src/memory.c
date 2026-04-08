@@ -1,226 +1,224 @@
 /*
 A00469340 Xavier Mcdonald
-Memory Simulation using First Best Fit
+Memory Simulation using First-Fit Approach
 
-This program uses a first best fit by iterating through each segment of available blocks. Each time a
-memory space is commited it splits to create another segment as a way to better iterate through a list.
-The program does not merge automatically and can be done using the compact function.
+This program implements a first-fit algorithm by checking each memory segment sequentially. 
+When space is allocated, the block is split to track the remaining available memory. 
+Merging adjacent free blocks is not automatic and requires executing the defragmentation function.
 */
-
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "logger_client.h"
 
-#define MAX_BLOCKS 100
+#define MAX_SEGMENTS 100
 
-int m_id[MAX_BLOCKS];
-int m_start[MAX_BLOCKS];
-int m_size[MAX_BLOCKS];
-int m_is_free[MAX_BLOCKS];
+int segment_pid[MAX_SEGMENTS];
+int base_address[MAX_SEGMENTS];
+int segment_length[MAX_SEGMENTS];
+int is_unallocated[MAX_SEGMENTS];
 
-int total_blocks = 0;
+int active_segments = 0;
 
-
-// Display Mem-Map
-void display() {
+// Display Memory Layout
+void print_mem_map() {
     log_event("MEMORY", "Action: User requested to display memory map.");
-    printf("\n--------------\n");
-    printf("Index\tPID\tStart\tSize\tStatus\n");
-    for (int i = 0; i < total_blocks; i++) {
-        if (m_is_free[i]) {
-            printf("%d\t-\t%d\t%d\tFree\n", i, m_start[i], m_size[i]);
+    printf("\n--- Current Memory Layout ---\n");
+    printf("Idx\tOwner\tBase\tLength\tState\n");
+    for (int i = 0; i < active_segments; i++) {
+        if (is_unallocated[i]) {
+            printf("%d\t-\t%d\t%d\tAvailable\n", i, base_address[i], segment_length[i]);
         } else {
-            printf("%d\tP%d\t%d\t%d\tAllocated\n", i, m_id[i], m_start[i], m_size[i]);
+            printf("%d\tP%d\t%d\t%d\tIn Use\n", i, segment_pid[i], base_address[i], segment_length[i]);
         }
     }
-    printf("------------------\n");
+    printf("-----------------------------\n");
 }
 
-//Allocation First-Fit Algo
-void allocate(int proc_id, int request_size) {
-    char log_msg[256];
+// Allocation First-Fit Algo
+void grant_space(int target_id, int needed_space) {
+    char log_buffer[256];
     
-    for (int i = 0; i < total_blocks; i++) {
-        if (m_is_free[i] && m_size[i] >= request_size) {
-            if (m_size[i] == request_size) {
-                m_is_free[i] = 0;
-                m_id[i] = proc_id;
+    for (int i = 0; i < active_segments; i++) {
+        if (is_unallocated[i] && segment_length[i] >= needed_space) {
+            if (segment_length[i] == needed_space) {
+                is_unallocated[i] = 0;
+                segment_pid[i] = target_id;
                 
-                snprintf(log_msg, sizeof(log_msg), "Action: Successfully allocated exact fit for P%d (Size: %d).", proc_id, request_size);
-                log_event("MEMORY", log_msg);
-                printf("Successfully allocated P%d.\n", proc_id);
+                snprintf(log_buffer, sizeof(log_buffer), "Action: Exact fit assignment for P%d (Size: %d).", target_id, needed_space);
+                log_event("MEMORY", log_buffer);
+                printf("Space granted to P%d.\n", target_id);
                 return;
             }
             
             // Shift elements right across all arrays
-            for (int j = total_blocks; j > i; j--) {
-                m_id[j] = m_id[j-1];
-                m_start[j] = m_start[j-1];
-                m_size[j] = m_size[j-1];
-                m_is_free[j] = m_is_free[j-1];
+            for (int k = active_segments; k > i; k--) {
+                segment_pid[k] = segment_pid[k-1];
+                base_address[k] = base_address[k-1];
+                segment_length[k] = segment_length[k-1];
+                is_unallocated[k] = is_unallocated[k-1];
             }
             
             // Assign allocated block
-            m_id[i] = proc_id;
-            m_is_free[i] = 0;
-            m_size[i] = request_size;
+            segment_pid[i] = target_id;
+            is_unallocated[i] = 0;
+            segment_length[i] = needed_space;
             
             // Update the remaining free block
-            m_start[i+1] = m_start[i] + request_size;
-            m_size[i+1] -= request_size;
-            total_blocks++;
+            base_address[i+1] = base_address[i] + needed_space;
+            segment_length[i+1] -= needed_space;
+            active_segments++;
             
-            snprintf(log_msg, sizeof(log_msg), "Action: Successfully allocated and split block for P%d (Size: %d).", proc_id, request_size);
-            log_event("MEMORY", log_msg);
-            printf("Successfully allocated P%d.\n", proc_id);
+            snprintf(log_buffer, sizeof(log_buffer), "Action: Split and assigned block for P%d (Size: %d).", target_id, needed_space);
+            log_event("MEMORY", log_buffer);
+            printf("Space granted to P%d.\n", target_id);
             return;
         }
     }
-    snprintf(log_msg, sizeof(log_msg), "Action: Allocation failed for P%d (Size: %d) - Not enough contiguous space.", proc_id, request_size);
-    log_event("MEMORY", log_msg);
-    printf("Allocation failed: Not enough contiguous space.\n");
+    snprintf(log_buffer, sizeof(log_buffer), "Action: Space request denied for P%d (Size: %d) - Insufficient contiguous block.", target_id, needed_space);
+    log_event("MEMORY", log_buffer);
+    printf("Request denied: Insufficient contiguous space.\n");
 }
 
 // Deallocation
-void deallocate(int proc_id) {
-    int found = 0;
-    char log_msg[256];
+void release_memory(int target_id) {
+    int is_located = 0;
+    char log_buffer[256];
 
-    for (int i = 0; i < total_blocks; i++) {
-        if (!m_is_free[i] && m_id[i] == proc_id) {
-            m_is_free[i] = 1;
-            m_id[i] = -1;
-            found = 1;
+    for (int i = 0; i < active_segments; i++) {
+        if (!is_unallocated[i] && segment_pid[i] == target_id) {
+            is_unallocated[i] = 1;
+            segment_pid[i] = -1;
+            is_located = 1;
             
-            snprintf(log_msg, sizeof(log_msg), "Action: Deallocated memory for P%d.", proc_id);
-            log_event("MEMORY", log_msg);
-            printf("Deallocated P%d.\n", proc_id);
+            snprintf(log_buffer, sizeof(log_buffer), "Action: Freed memory for P%d.", target_id);
+            log_event("MEMORY", log_buffer);
+            printf("Freed P%d.\n", target_id);
         }
     }
-    if (!found) {
-        snprintf(log_msg, sizeof(log_msg), "Action: Deallocation failed - P%d not found.", proc_id);
-        log_event("MEMORY", log_msg);
-        printf("Deallocation failed: P%d not found.\n", proc_id);
+    if (!is_located) {
+        snprintf(log_buffer, sizeof(log_buffer), "Action: Free failed - P%d missing.", target_id);
+        log_event("MEMORY", log_buffer);
+        printf("Free failed: P%d not located.\n", target_id);
     }
 }
 
 // Compaction
-void compact() {
-    int current_addr = 0;
-    int write_index = 0;
-    int total_free_space = 0;
+void defragment_memory() {
+    int running_address = 0;
+    int shift_ptr = 0;
+    int accumulated_free_mem = 0;
 
-    for (int i = 0; i < total_blocks; i++) {
-        if (!m_is_free[i]) {
-            m_start[i] = current_addr;
-            current_addr += m_size[i];
+    for (int i = 0; i < active_segments; i++) {
+        if (!is_unallocated[i]) {
+            base_address[i] = running_address;
+            running_address += segment_length[i];
             
             // Shift allocated data left
-            m_id[write_index] = m_id[i];
-            m_start[write_index] = m_start[i];
-            m_size[write_index] = m_size[i];
-            m_is_free[write_index] = 0;
-            write_index++;
+            segment_pid[shift_ptr] = segment_pid[i];
+            base_address[shift_ptr] = base_address[i];
+            segment_length[shift_ptr] = segment_length[i];
+            is_unallocated[shift_ptr] = 0;
+            shift_ptr++;
         } else {
-            total_free_space += m_size[i];
+            accumulated_free_mem += segment_length[i];
         }
     }
     
     // Add consolidated free block at the end
-    if (total_free_space > 0) {
-        m_id[write_index] = -1;
-        m_start[write_index] = current_addr;
-        m_size[write_index] = total_free_space;
-        m_is_free[write_index] = 1;
-        total_blocks = write_index + 1;
+    if (accumulated_free_mem > 0) {
+        segment_pid[shift_ptr] = -1;
+        base_address[shift_ptr] = running_address;
+        segment_length[shift_ptr] = accumulated_free_mem;
+        is_unallocated[shift_ptr] = 1;
+        active_segments = shift_ptr + 1;
     } else {
-        total_blocks = write_index;
+        active_segments = shift_ptr;
     }
     
-    log_event("MEMORY", "Action: Executed memory compaction.");
-    printf("Memory compacted.\n");
+    log_event("MEMORY", "Action: Ran memory defragmentation.");
+    printf("Memory defragmented.\n");
 }
 
 // Main Driver
 int main() {
-    int initial_memory;
-    char log_msg[256];
+    int starting_capacity;
+    char log_buffer[256];
     
     log_event("MEMORY", "System: Memory Allocation module initialized.");
 
-    printf("Enter initial memory size (total space): ");
-    if (scanf("%d", &initial_memory) != 1 || initial_memory <= 0) {
+    printf("Enter initial memory capacity (total space): ");
+    if (scanf("%d", &starting_capacity) != 1 || starting_capacity <= 0) {
         log_event("MEMORY", "Error: Invalid initial memory size entered. Exiting.");
-        printf("Invalid memory size. Exiting.\n");
+        printf("Invalid capacity. Exiting.\n");
         return 1;
     }
 
-    snprintf(log_msg, sizeof(log_msg), "Input: Initial memory size set to %d.", initial_memory);
-    log_event("MEMORY", log_msg);
+    snprintf(log_buffer, sizeof(log_buffer), "Input: Initial memory size set to %d.", starting_capacity);
+    log_event("MEMORY", log_buffer);
 
     // Initialize the starting state as one large free block
-    m_id[0] = -1;
-    m_start[0] = 0;
-    m_size[0] = initial_memory;
-    m_is_free[0] = 1;
-    total_blocks = 1;
+    segment_pid[0] = -1;
+    base_address[0] = 0;
+    segment_length[0] = starting_capacity;
+    is_unallocated[0] = 1;
+    active_segments = 1;
 
-    int choice, proc_id, size;
+    int menu_selection, input_pid, input_length;
 
     while (1) {
-        printf("\n--- Memory Manager ---\n");
-        printf("1. Allocate Memory\n");
-        printf("2. Deallocate Memory\n");
-        printf("3. Compact Memory\n");
-        printf("4. Display Memory Map\n");
-        printf("5. Exit\n");
-        printf("Select an option: ");
+        printf("\n--- Allocation Interface ---\n");
+        printf("1. Grant Memory\n");
+        printf("2. Release Memory\n");
+        printf("3. Defragment Memory\n");
+        printf("4. Print Memory Layout\n");
+        printf("5. Quit\n");
+        printf("Choose an option: ");
         
-        if (scanf("%d", &choice) != 1) {
+        if (scanf("%d", &menu_selection) != 1) {
             log_event("MEMORY", "Error: Non-integer input detected at main menu.");
-            printf("Invalid input. Please enter a number.\n");
+            printf("Invalid input. Please enter a valid number.\n");
             while (getchar() != '\n'); 
             continue;
         }
 
-        snprintf(log_msg, sizeof(log_msg), "Input: User selected menu option %d.", choice);
-        log_event("MEMORY", log_msg);
+        snprintf(log_buffer, sizeof(log_buffer), "Input: User selected menu option %d.", menu_selection);
+        log_event("MEMORY", log_buffer);
 
-        switch (choice) {
+        switch (menu_selection) {
             case 1:
-                printf("Enter Process ID (integer): ");
-                if (scanf("%d", &proc_id) != 1) { while(getchar() != '\n'); break; }
-                printf("Enter Size: ");
-                if (scanf("%d", &size) != 1) { while(getchar() != '\n'); break; }
+                printf("Enter Target Process ID (integer): ");
+                if (scanf("%d", &input_pid) != 1) { while(getchar() != '\n'); break; }
+                printf("Enter Required Size: ");
+                if (scanf("%d", &input_length) != 1) { while(getchar() != '\n'); break; }
                 
-                snprintf(log_msg, sizeof(log_msg), "Input: Requested allocation for P%d with size %d.", proc_id, size);
-                log_event("MEMORY", log_msg);
+                snprintf(log_buffer, sizeof(log_buffer), "Input: Requested allocation for P%d with size %d.", input_pid, input_length);
+                log_event("MEMORY", log_buffer);
                 
-                allocate(proc_id, size);
+                grant_space(input_pid, input_length);
                 break;
             case 2:
-                printf("Enter Process ID to deallocate: ");
-                if (scanf("%d", &proc_id) != 1) { while(getchar() != '\n'); break; }
+                printf("Enter Process ID to release: ");
+                if (scanf("%d", &input_pid) != 1) { while(getchar() != '\n'); break; }
                 
-                snprintf(log_msg, sizeof(log_msg), "Input: Requested deallocation for P%d.", proc_id);
-                log_event("MEMORY", log_msg);
+                snprintf(log_buffer, sizeof(log_buffer), "Input: Requested deallocation for P%d.", input_pid);
+                log_event("MEMORY", log_buffer);
                 
-                deallocate(proc_id);
+                release_memory(input_pid);
                 break;
             case 3:
-                compact();
+                defragment_memory();
                 break;
             case 4:
-                display();
+                print_mem_map();
                 break;
             case 5:
                 log_event("MEMORY", "System: Exiting Memory Allocation module.");
-                printf("Exiting Memory Manager...\n");
+                printf("Shutting down interface...\n");
                 return 0;
             default:
-                printf("Invalid choice. Select 1-5.\n");
+                printf("Invalid selection. Please choose 1-5.\n");
         }
     }
     return 0;
