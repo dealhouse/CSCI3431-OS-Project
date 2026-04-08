@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Clean old bin and logs
+#Clean old bin and logs and shared memory resources
 echo "Cleaning old build..."
 rm -rf bin/ 
 rm -rf logs/

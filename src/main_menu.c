@@ -16,9 +16,9 @@ int main()
         exit(1);
     }
 
-#define CYAN "\033[0;36m"
-#define YELLOW "\033[0;33m"
-#define RESET "\033[0m"
+    #define CYAN "\033[0;36m"
+    #define YELLOW "\033[0;33m"
+    #define RESET "\033[0m"
 
     sleep(1);
     while (1)
