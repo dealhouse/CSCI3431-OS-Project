@@ -46,7 +46,7 @@ int main()
         printf("Invalid input. Parallel fraction must be between 0 and 1.\n");
         return 1;
     }
-
+    log_event("AMDAHL", "Fraction selected.");
     printf("Enter number of cores: ");
     scanf("%d", &cores);
     if (cores <= 0)
@@ -54,7 +54,7 @@ int main()
         printf("Invalid input. Must be a positive number of cores.\n");
         return 1;
     }
-
+    log_event("AMDAHL", "Cores selected.");
     speedup = calculate_speedup(parallel_fraction, cores);
     log_event("AMDAHL", "Speedup calculated");
     printf("--- Result ---\n");
@@ -64,6 +64,7 @@ int main()
     scanf(" %d", &choice);
     if (choice == 1)
     {
+        log_event("AMDAHL", "Comparing execution times");
         compare_execution_times(speedup);
         log_event("AMDAHL", "Execution comparison done");
     }
