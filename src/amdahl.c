@@ -1,3 +1,12 @@
+/*
+A004050815 Daniel Johnston
+Amdahl's Law Calculator
+
+This program is an Amdahl’s Law calculator that estimates the performance improvement of a program, 
+when it is parallelized across multiple CPU cores. 
+Also, it optionally compares execution times between serial and parallel versions.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "logger_client.h"
