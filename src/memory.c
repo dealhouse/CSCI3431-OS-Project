@@ -1,3 +1,13 @@
+/*
+A00469340 Xavier Mcdonald
+Memory Simulation using First Best Fit
+
+This program uses a first best fit by iterating through each segment of available blocks. Each time a
+memory space is commited it splits to create another segment as a way to better iterate through a list.
+The program does not merge automatically and can be done using the compact function.
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
