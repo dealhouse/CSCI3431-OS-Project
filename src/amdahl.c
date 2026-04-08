@@ -2,12 +2,9 @@
 #include <stdlib.h>
 #include "logger_client.h"
 
-
 double calculate_speedup(double parallel_fraction, int cores)
 {
-    double serial_fraction = 1.0 - parallel_fraction;
-
-    return 1.0 / (serial_fraction + (parallel_fraction / cores)); // Amdahl's Law formula
+    return 1.0 / ((1.0 - parallel_fraction) + (parallel_fraction / cores));
 }
 
 void compare_execution_times(double speedup)
@@ -16,19 +13,20 @@ void compare_execution_times(double speedup)
 
     printf("Enter serial execution time (in seconds): ");
     scanf("%lf", &serial_time);
-    if (serial_time <= 0)
+    if (serial_time < 0)
     {
         printf("Invalid input. Serial execution time must be a positive number.\n");
         return;
     }
 
-    double parallel_time = serial_time / speedup; // Calculate parallel execution time based on speedup
+    double parallel_time = serial_time / speedup;
 
     printf("\n--- Execution Comparison ---\n");
     printf("Serial Time   = %.4f seconds\n", serial_time);
     printf("Parallel Time = %.4f seconds\n", parallel_time);
     printf("Time Saved    = %.4f seconds\n", serial_time - parallel_time);
     printf("\nPress enter to exit...");
+    
     getchar();
     getchar();
 }
@@ -43,7 +41,7 @@ int main()
 
     printf("Enter parallel fraction (0 to 1): ");
     scanf("%lf", &parallel_fraction);
-    if (parallel_fraction < 0 || parallel_fraction > 1)
+    if ((parallel_fraction < 0) || (1 < parallel_fraction))
     {
         printf("Invalid input. Parallel fraction must be between 0 and 1.\n");
         return 1;
@@ -51,7 +49,7 @@ int main()
 
     printf("Enter number of cores: ");
     scanf("%d", &cores);
-    if (!(cores > 0))
+    if (cores <= 0)
     {
         printf("Invalid input. Must be a positive number of cores.\n");
         return 1;
@@ -69,6 +67,7 @@ int main()
         compare_execution_times(speedup);
         log_event("AMDAHL", "Execution comparison done");
     }
+    
     log_event("AMDAHL", "Module exited");
     return 0;
 }
