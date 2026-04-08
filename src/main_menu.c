@@ -77,7 +77,7 @@ int main()
                 else
                 {
                     fclose(f);
-                    execlp("less", "less", "../logs/logs.txt", NULL);
+                    execlp("less", "less", "-P", "Press 'q' to return to main menu", "../logs/logs.txt", NULL);
                 }
 
                 exit(0);
